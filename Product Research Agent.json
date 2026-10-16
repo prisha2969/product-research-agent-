@@ -1,0 +1,184 @@
+{
+  "name": "Product Research Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -464,
+        0
+      ],
+      "id": "d5692e4e-4bd7-4958-b1ab-7318a56ca6c9",
+      "name": "When chat message received",
+      "webhookId": "fc8eb703-7da7-42b4-9e19-42abf918c3e5"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=Today's date: {{ $now.toFormat('yyyy-MM-dd') }}\n\nYou are a Product Research Agent specialized in e-commerce market analysis.\n\n## WORKFLOW\nWhen the user asks you to research a product:\n\n1. SEARCH: Use Firecrawl Search with a specific query, e.g.\n   \"best [product] under [price] [current year] review\"\n   Use the year from today's date above. Prefer review articles and\n   comparison pages that list multiple products with prices and ratings.\n\n2. SCRAPE: Scrape ONLY the top 2 relevant results. If a page fails\n   or has no useful data, continue with the other result.\n\n3. ANALYZE: Generate the report below using only the data you found.\n\n## SEARCH STRATEGY\n- User names a marketplace → search that site\n  (e.g. \"wireless earbuds site:amazon.in\"). If scraping the\n  marketplace fails, fall back to review pages.\n- User names only a country → search that country's major\n  marketplaces (e.g. amazon.de for Germany, amazon.eg OR\n  noon.com/egypt for Egypt).\n- No marketplace or country → search Indian marketplaces and\n  Indian review sites.\n- User explicitly asks for global/international → search global\n  review sites.\n\n## CURRENCY\n- If the user states a currency (symbol or code, e.g. €, EUR, $, USD,\n  EGP, AED), use it.\n- Otherwise, use the local currency of the country or marketplace\n  being searched (e.g. Germany → EUR, UK → GBP, Egypt → EGP,\n  Saudi Arabia → SAR, UAE → AED).\n- If no country, marketplace or currency is given, use Indian\n  Rupees (₹).\n- Never convert between currencies unless the user asks. Report\n  prices exactly as listed on the source, and state the currency\n  next to every price.\n\n## REPORT FORMAT\n📊 MARKET OVERVIEW\n- Number of products found\n- Price range (min / avg / max)\n- Average rating\n\n🏆 TOP 3 PRODUCTS\nComparison table: product name, brand, price, rating, key features,\nsource URL, purchase link (if available).\n\n💡 KEY INSIGHTS\n- Most common features customers want\n- What separates best-sellers from budget options\n\n⚠️ COMMON COMPLAINTS\n- At least 3 recurring issues from reviews\n- Red flags to avoid when purchasing\n\n✅ RECOMMENDATION\n- Best product to BUY (best value)\n- Best niche opportunity to SELL (market gap)\n\n## RULES\n- Reply in the same language the user writes in.\n- Keep reports concise and actionable.\n- Always include source URLs, and only use URLs that appeared in\n  your search or scrape results. Never invent links.\n- Never invent prices, ratings or reviews. If data is missing,\n  write \"not found\" and analyze what you do have.\n- Always deliver the best report possible with the available data,\n  and mention briefly if the data was limited.\n- Prices and availability change often. State the date of the report\n  (today's date above) and do not claim the data is current beyond\n  what the source pages show.- Compute market statistics (product count, price range, average\n  rating) ONLY from the products actually listed in the scraped\n  pages. State the basis, e.g. \"based on 8 products found in 2\n  sources\". Never estimate totals for the whole market.\n- Clearly separate facts from the sources and your own inference.\n  Mark inferences as \"Analyst opinion:\" and do not present them\n  as market data.\n- For complaints, only report issues that appear in the scraped\n  reviews, and name the source.\n- Show every source as a full visible URL, not just link text.\n- End the report with a \"Data limitations\" line (sources used,\n  number of products, anything missing)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -176,
+        -304
+      ],
+      "id": "0b5a75c1-c92b-4604-ad0f-ed102dabb399",
+      "name": "AI Agent",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -192,
+        144
+      ],
+      "id": "c67bf88e-9925-476c-9841-c390a18ef333",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to search the live web for articles, reviews, product comparisons, and pricing data. Input should be a concise search query.",
+        "resource": "MapSearch",
+        "operation": "search",
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "limit": 5,
+        "requestOptions": {}
+      },
+      "type": "@mendable/n8n-nodes-firecrawl.firecrawlTool",
+      "typeVersion": 1.1,
+      "position": [
+        -64,
+        272
+      ],
+      "id": "d198ac8f-a9d0-4b83-a5a1-6960cfa8c811",
+      "name": "Search web in Firecrawl",
+      "credentials": {
+        "firecrawlApi": {
+          "id": "HCSZE4d5pi4zfV6d",
+          "name": "Firecrawl account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Scrapes and extracts full text content from a specified web page URL. Input must be a valid URL starting with http:// or https://.",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "requestOptions": {}
+      },
+      "type": "@mendable/n8n-nodes-firecrawl.firecrawlTool",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        128
+      ],
+      "id": "aba05392-4fd2-4ba0-9127-872227cef43d",
+      "name": "Scrape URL in Firecrawl",
+      "credentials": {
+        "firecrawlApi": {
+          "id": "HCSZE4d5pi4zfV6d",
+          "name": "Firecrawl account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -384,
+        208
+      ],
+      "id": "e5940d85-4c9a-40ac-aea0-031f68e6ce04",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "zkMO5XRJDYJBkzAp",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search web in Firecrawl": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape URL in Firecrawl": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "40313ba8-0ccc-4d9c-a100-2bc28db238e7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "04de18010bd0e840626c9b3fa9a66d311822bc9e0a2accbd676a82f1f2e8529d"
+  },
+  "nodeGroups": [],
+  "id": "l0wj9MkKkTVKI3hl",
+  "tags": []
+}
